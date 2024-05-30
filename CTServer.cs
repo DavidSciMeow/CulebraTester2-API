@@ -14,8 +14,6 @@ namespace CulebraTesterAPI
         private int Port { get; set; }
         public CTServer(int localport = 9987, bool logtoconsole = false)
         {
-            
-
             Port = localport;
             Process.StartInfo.FileName = @"C:\Program Files\Git\bin\bash.exe";
             Process.StartInfo.Arguments = $"-c './c2 start-server --local-port {localport}'";
@@ -30,6 +28,15 @@ namespace CulebraTesterAPI
                 if (e?.Data?.Contains("INSTRUMENTATION_STATUS_CODE: 1") ?? false)
                 {
                     Useable = true;
+                }
+                else if (e?.Data?.Contains("INSTRUMENTATION_CODE: 0") ?? false)
+                {
+                    Useable = false;
+                }
+
+                if(e?.Data?.Contains("INSTRUMENTATION_RESULT:") ?? false)
+                {
+                    Debug.WriteLine(e?.Data?.Replace("INSTRUMENTATION_RESULT:", "").Trim());
                 }
 
                 if (logtoconsole) Console.WriteLine(e.Data);
@@ -58,11 +65,14 @@ namespace CulebraTesterAPI
 
         public static void CleanServerStart()
         {
+            Console.WriteLine("Performing Clean Start");
             foreach (var process in Process.GetProcessesByName("adb"))
             {
+                Debug.WriteLine($"{process.Id} :: {process.ProcessName} - K");
                 process.Kill();
             }
         }
+
         protected virtual void Dispose(bool disposing)
         {
             void KAC(int pid)

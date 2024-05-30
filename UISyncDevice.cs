@@ -10,7 +10,7 @@ namespace CulebraTesterAPI
         public static bool Click(this CTClient Client, UINode node) => (JObject.Parse(Client.UD_Click(node).GetAwaiter().GetResult())?["status"]?.ToString()?.ToUpperInvariant() ?? "ERR") == "OK";
         public static bool ClickUIWhereTextContains(this CTClient c, string ss)
         {
-            var uio = c.GetUI();
+            var uio = c.GetUI().GetAwaiter().GetResult();
             var element = from a in uio where a.Text.Trim().Contains(ss) select a;
             if (element.Any())
             {
@@ -30,7 +30,7 @@ namespace CulebraTesterAPI
         }
         public static bool ClickUIWhereDescIs(this CTClient c, string ss)
         {
-            var uio = c.GetUI();
+            var uio = c.GetUI().GetAwaiter().GetResult();
             var element = from a in uio where a.Content_desc.Trim() == ss select a;
             if (element.Any())
             {
@@ -50,7 +50,7 @@ namespace CulebraTesterAPI
         }
         public static bool ClickUIWhereTextIs(this CTClient c, string ss)
         {
-            var uio = c.GetUI();
+            var uio = c.GetUI().GetAwaiter().GetResult();
             var element = from a in uio where a.Text.Trim() == ss select a;
             if (element.Any())
             {
