@@ -1,6 +1,6 @@
 ﻿using Newtonsoft.Json.Linq;
 
-namespace CulebraTesterAPI
+namespace CulebraTesterAPI.BasicStruct
 {
 
     /// <summary>

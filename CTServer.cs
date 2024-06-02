@@ -10,7 +10,7 @@ namespace CulebraTesterAPI
     {
         private bool disposedValue;
         private Process Process { get; } = new Process();
-        private bool Useable { get; set; } = false;
+        public bool Useable { get; set; } = false;
         private int Port { get; set; }
         public CTServer(int localport = 9987, bool logtoconsole = false)
         {
@@ -34,14 +34,10 @@ namespace CulebraTesterAPI
                     Useable = false;
                 }
 
-                if(e?.Data?.Contains("INSTRUMENTATION_RESULT:") ?? false)
-                {
-                    Debug.WriteLine(e?.Data?.Replace("INSTRUMENTATION_RESULT:", "").Trim());
-                }
-
+                //if (e?.Data?.Contains("INSTRUMENTATION_RESULT:") ?? false) Debug.WriteLine(e?.Data?.Replace("INSTRUMENTATION_RESULT:", "").Trim());
                 if (logtoconsole) Console.WriteLine(e.Data);
-                Debug.WriteLine(e.Data);
             };
+
             Process.ErrorDataReceived += (_, e) =>
             {
                 if (logtoconsole) Console.WriteLine(e.Data);
@@ -56,6 +52,7 @@ namespace CulebraTesterAPI
             {
                 if (Useable)
                 {
+                    Task.Delay(1000).Wait();
                     break;
                 }
 

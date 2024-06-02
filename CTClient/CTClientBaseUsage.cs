@@ -1,90 +1,99 @@
-﻿using Newtonsoft.Json.Linq;
-using Newtonsoft.Json;
-using System;
-using System.Net.Http;
+﻿using System;
 using System.Threading.Tasks;
+using System.Collections.Generic;
+using System.Linq;
+using Newtonsoft.Json.Linq;
+using CulebraTesterAPI.BasicStruct;
 
 namespace CulebraTesterAPI
 {
     public partial class CTClient : IDisposable
     {
-        public Task<string> Conf_GetWaitForIdleTimeout() => Cli.GetStringAsync($"{Url}/v2/configurator/getWaitForIdleTimeout");
-        public Task<string> Conf_SetWaitForIdleTimeout(long timeout) => Cli.GetStringAsync($"{Url}/v2/configurator/setWaitForIdleTimeout?timeout={timeout}");
+        #region Private Methods
+        private Task<(string country, string lang, string varient)> D_Locale() => Task.Run(async () => { var obj = await CUrlGetJObject("/device/locale"); return (obj["country"].ToString(), obj["language"].ToString(), obj["variant"].ToString()); });
+        private Task<int> Conf_GetWaitForIdleTimeout() => Task.Run(async () => await CUrlGetJsonParsed<int>("configurator/getWaitForIdleTimeout", "timeout"));
+        private Task<bool> Conf_SetWaitForIdleTimeout(long timeout) => Task.Run(async () => "OK".Equals(await CUrlGetJsonParsed<string>("configurator/setWaitForIdleTimeout", "status", (nameof(timeout), timeout.ToString()))));
+        private Task<(long versionCode, string versionName)> Info() => Task.Run(async () => { var obj = await CUrlGetJObject("culebra/info"); return (obj["versionCode"].ToObject<long>(), obj["versionName"].ToString()); });
+        private Task<bool> UD_FreezeRotation() => Task.Run(async () => "OK".Equals(await CUrlGetJsonParsed<string>("uiDevice/freezeRotation", "status")));
+        private Task<bool> UD_UnfreezeRotation() => Task.Run(async () => "OK".Equals(await CUrlGetJsonParsed<string>("uiDevice/unfreezeRotation", "status")));
+        private Task<bool> UD_IsNaturalOrientation() => Task.Run(async () => "true".Equals(await CUrlGetJsonParsed<string>("uiDevice/isNaturalOrientation", "value")));
+        private Task<bool> UD_IsScreenOn() => Task.Run(async () => "true".Equals(await CUrlGetJsonParsed<string>("uiDevice/isScreenOn", "value")));
+        private Task<long> UD_DisplayHeight() => Task.Run(async () => await CUrlGetJsonParsed<long>("uiDevice/displayHeight", "displayHeight"));
+        private Task<int> UD_DisplayRotation() => Task.Run(async () => int.Parse((await CUrlGetJsonParsed<string>("uiDevice/displayRotation", "displayRotation")).Substring(1)));
+        private Task<(long DpX, long DpY)> UD_DisplaySizeDp() => Task.Run(async () => { var obj = await CUrlGetJObject("uiDevice/displaySizeDp"); return (obj["displaySizeDpX"].ToObject<long>(), obj["displaySizeDpY"].ToObject<long>()); });
+        private Task<long> UD_DisplayWidth() => Task.Run(async () => await CUrlGetJsonParsed<long>("uiDevice/displayWidth", "displayWidth"));
+        private Task<string> UD_ProductName() => Task.Run(async () => await CUrlGetJsonParsed<string>("uiDevice/productName", "productName"));
+        #endregion
 
-        public Task<string> AM_ForceStop(string pkg) => Cli.GetStringAsync($"{Url}/v2/am/forceStop?pkg={pkg}");
+        #region Public Alter Managed Methods
+        public Task<string> D_Dumpsys(string service, string arg1 = null, string arg2 = null, string arg3 = null) => CUrl($"device/dumpsys", (nameof(service), service), (nameof(arg1), arg1), (nameof(arg2), arg2), (nameof(arg3), arg3));
+        public Task<string> D_WaitForNewToast(long timeout) => CUrl($"device/waitForNewToast", (nameof(timeout), timeout.ToString()));
+        public Task<string> UD_DumpWindowHierarchy() => CUrl("uiDevice/dumpWindowHierarchy"); //leave 
 
-        public Task<string> Help(string api) => Cli.GetStringAsync($"{Url}/v2/culebra/help/{api}");
-        public Task<string> Info() => Cli.GetStringAsync($"{Url}/v2/culebra/info");
-        public Task<string> Quit() => Cli.GetStringAsync($"{Url}/v2/culebra/quit");
+        public Task<string> TC_StartActivity(string pkg, string cls, string uri = null) => CUrlGetJsonParsed<string>("targetContext/startActivity", "status", (nameof(pkg), pkg), (nameof(cls), cls), (nameof(uri), uri));
+        public Task<byte[]> UD_Screenshot(int scale = 1, int quality = 100) => Task.Run(async () => await CUrlBytes("uiDevice/screenshot", (nameof(scale), scale.ToString()), (nameof(quality), quality.ToString())));
 
-        public Task<string> D_DisplayRealSize() => Cli.GetStringAsync($"{Url}/v2/device/displayRealSize");
-        public Task<string> D_Dumpsys(string service, string arg1 = null, string arg2 = null, string arg3 = null) => Cli.GetStringAsync($"{Url}/v2/device/dumpsys?service={service}{(string.IsNullOrWhiteSpace(arg1) ? "" : $"&arg1={arg1}")}{(string.IsNullOrWhiteSpace(arg2) ? "" : $"&arg2={arg2}")}{(string.IsNullOrWhiteSpace(arg3) ? "" : $"&arg3={arg3}")}");
-        public Task<string> D_Locale() => Cli.GetStringAsync($"{Url}/v2/device/locale");
-        public Task<string> D_WaitForNewToast(long timeout) => Cli.GetStringAsync($"{Url}/v2/device/waitForNewToast?timeout={timeout}");
+        public Task<string> UD_CurrentPackageName() => Task.Run(async () => await CUrlGetJsonParsed<string>("uiDevice/currentPackageName", "currentPackageName"));
 
-        public Task<string> OS_Clear() => Cli.GetStringAsync($"{Url}/v2/objectStore/clear");
-        public Task<string> OS_List() => Cli.GetStringAsync($"{Url}/v2/objectStore/list");
-        public Task<string> OS_Remove(int oid) => Cli.GetStringAsync($"{Url}/v2/objectStore/remove?oid={oid}");
+        public Task<bool> OS_Clear() => Task.Run(async () => "OK".Equals(await CUrlGetJsonParsed<string>("objectStore/clear", "status")));
+        public Task<List<UIObject>> OS_List() => Task.Run(async () => (await CUrlGetJArray("objectStore/list")).Select(i => new UIObject(i, this)).ToList());
+        public Task<bool> OS_Remove(long oid) => Task.Run(async () => "OK".Equals(await CUrlGetJsonParsed<string>("objectStore/remove", "status", (nameof(oid), oid.ToString()))));
 
-        public Task<string> TC_StartActivity(string pkg, string cls, string uri = null) => Cli.GetStringAsync($"{Url}/v2/targetContext/startActivity?pkg={pkg}&cls={cls}{(string.IsNullOrWhiteSpace(uri) ? "" : $"&uri={uri}")}");
+        public Task<bool> UD_PressBack() => Task.Run(async () => "OK".Equals(await CUrlGetJsonParsed<string>("uiDevice/pressBack", "status")));
+        public Task<bool> UD_PressDPadCenter() => Task.Run(async () => "OK".Equals(await CUrlGetJsonParsed<string>("uiDevice/pressDPadCenter", "status")));
+        public Task<bool> UD_PressDPadDown() => Task.Run(async () => "OK".Equals(await CUrlGetJsonParsed<string>("uiDevice/pressDPadDown", "status")));
+        public Task<bool> UD_PressDPadLeft() => Task.Run(async () => "OK".Equals(await CUrlGetJsonParsed<string>("uiDevice/pressDPadLeft", "status")));
+        public Task<bool> UD_PressDPadRight() => Task.Run(async () => "OK".Equals(await CUrlGetJsonParsed<string>("uiDevice/pressDPadRight", "status")));
+        public Task<bool> UD_PressDPadUp() => Task.Run(async () => "OK".Equals(await CUrlGetJsonParsed<string>("uiDevice/pressDPadUp", "status")));
+        public Task<bool> UD_PressDelete() => Task.Run(async () => "OK".Equals(await CUrlGetJsonParsed<string>("uiDevice/pressDelete", "status")));
+        public Task<bool> UD_PressEnter() => Task.Run(async () => "OK".Equals(await CUrlGetJsonParsed<string>("uiDevice/pressEnter", "status")));
+        public Task<bool> UD_PressHome() => Task.Run(async () => "OK".Equals(await CUrlGetJsonParsed<string>("uiDevice/pressHome", "status")));
+        public Task<bool> UD_PressRecentApps() => Task.Run(async () => "OK".Equals(await CUrlGetJsonParsed<string>("uiDevice/pressRecentApps", "status")));
+        public Task<bool> UD_ClearLastTraversedText() => Task.Run(async () => "OK".Equals(await CUrlGetJsonParsed<string>("uiDevice/clearLastTraversedText", "status")));
+        public Task<bool> UD_Click(long x, long y) => Task.Run(async () => "OK".Equals(await CUrlGetJsonParsed<string>("uiDevice/click", "status", (nameof(x), x.ToString()), (nameof(y), y.ToString()))));
+        public Task<bool> UD_Click(UINode node) => Task.Run(async () => "OK".Equals(await CUrlGetJsonParsed<string>("uiDevice/click", "status", ("x", node.ClickCenter.X.ToString()), ("y", node.ClickCenter.Y.ToString()))));
+        public Task<bool> UD_Swipe(long startX, long startY, long endX, long endY, long steps = 1) => Task.Run(async () => "OK".Equals(await CUrlGetJsonParsed<string>($"uiDevice/pressHome", "status", (nameof(startX), startX.ToString()), (nameof(startY), startY.ToString()), (nameof(endX), endX.ToString()), (nameof(endY), endY.ToString()), (nameof(steps), steps.ToString()))));
+        public Task<bool> UD_Drag(long startX, long startY, long endX, long endY, long steps = 1) => Task.Run(async () => "OK".Equals(await CUrlGetJsonParsed<string>($"uiDevice/drag", "status", (nameof(startX), startX.ToString()), (nameof(startY), startY.ToString()), (nameof(endX), endX.ToString()), (nameof(endY), endY.ToString()), (nameof(steps), steps.ToString()))));
+        public Task<(int a, int b, int g, int r)> UD_Pixel() => Task.Run(async () => { var obj = await CUrlGetJObject("uiDevice/pixel"); return (obj["a"].ToObject<int>(), obj["b"].ToObject<int>(), obj["g"].ToObject<int>(), obj["r"].ToObject<int>()); });
+        public Task<bool> UD_PressKeyCode(Key key, int? metaState = null) => Task.Run(async () => "OK".Equals(await CUrlGetJsonParsed<string>("uiDevice/pressKeyCode", "status", (nameof(key), key.ToString()), (nameof(metaState), metaState.ToString()))));
+        public Task<bool> Quit() => Task.Run(async () => "OK".Equals(await CUrlGetJsonParsed<string>("culebra/quit", "status")));
+        public Task<(string devname, int x, int y)> D_DisplayRealSize() => Task.Run(async () => { var obj = await CUrlGetJObject("device/displayRealSize"); return (obj["device"].ToString(), obj["x"].ToObject<int>(), obj["y"].ToObject<int>()); });
 
-        public Task<bool> UD_ClearLastTraversedText() => Task.Run(async () => "OK".Equals(JObject.Parse(await Cli.GetStringAsync($"{Url}/v2/uiDevice/clearLastTraversedText"))["status"].ToString()));
-        public Task<bool> UD_Click(long x, long y) => Task.Run(async () => "OK".Equals(JObject.Parse(await Cli.GetStringAsync($"{Url}/v2/uiDevice/click?x={x}&y={y}"))["status"].ToString()));
-        public Task<string> UD_Click(UINode node) => Cli.GetStringAsync($"{Url}/v2/uiDevice/click?x={node.ClickCenter.X}&y={node.ClickCenter.Y}");
-        public Task<string> UD_CurrentPackageName() => Cli.GetStringAsync($"{Url}/v2/uiDevice/currentPackageName");
-        public Task<string> UD_DisplayHeight() => Cli.GetStringAsync($"{Url}/v2/uiDevice/displayHeight");
-        public Task<string> UD_DisplayRotation() => Cli.GetStringAsync($"{Url}/v2/uiDevice/displayRotation");
-        public Task<string> UD_DisplaySizeDp() => Cli.GetStringAsync($"{Url}/v2/uiDevice/displaySizeDp");
-        public Task<string> UD_DisplayWidth() => Cli.GetStringAsync($"{Url}/v2/uiDevice/displayWidth");
-        public Task<string> UD_Drag(long startX, long startY, long endX, long endY, long steps = 1) => Cli.GetStringAsync($"{Url}/v2/uiDevice/drag?startX={startX}&startY={startY}&endX={endX}&endY={endY}&steps={steps}");
-        public Task<string> UD_DumpWindowHierarchy() => Cli.GetStringAsync($"{Url}/v2/uiDevice/dumpWindowHierarchy");
+        public Task<UIObject> UD_FindObject(FindObjectQueryStruct foqs) => Task.Run(async () => new UIObject(await CUrlGetJObject("uiDevice/findObject", ("bySelector", foqs.ToString())), this));
+        public Task<List<UIObject>> UD_FindObjects(FindObjectQueryStruct foqs) => Task.Run(async () => (await CUrlGetJArray("uiDevice/findObjects", ("bySelector", foqs.ToString()))).Select(i => new UIObject(i, this)).ToList());
+        public Task<bool> UD_HasObject(FindObjectQueryStruct foqs) => Task.Run(async () => "true".Equals((await CUrlGetJsonParsed<string>("uiDevice/hasObject", "value", ("bySelector", foqs.ToString()))).ToLowerInvariant()));
 
-        public Task<HttpResponseMessage> UD_FindObject(FindObjectQueryStruct foqs) => Cli.PostAsync($"{Url}/v2/uiDevice/findObject", new StringContent(JsonConvert.SerializeObject(foqs, new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore })));
-        public Task<HttpResponseMessage> UD_FindObjects(FindObjectQueryStruct foqs) => Cli.PostAsync($"{Url}/v2/uiDevice/findObjects", new StringContent(JsonConvert.SerializeObject(foqs, new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore })));
-        public Task<HttpResponseMessage> UD_HasObject(FindObjectQueryStruct foqs) => Cli.PostAsync($"{Url}/v2/uiDevice/hasObject", new StringContent(JsonConvert.SerializeObject(foqs, new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore })));
+        public Task<bool> UIO_ClearTextField(long oid) => Task.Run(async () => "OK".Equals(await CUrlGetJsonParsed<string>($"uiObject/{oid}/clearTextField", "status")));
+        public Task<bool> UIO_Click(long oid) => Task.Run(async () => "OK".Equals(await CUrlGetJsonParsed<string>($"uiObject/{oid}/click", "status")));
+        public Task<bool> UIO_ClickAndWaitForNewWindow(long oid) => Task.Run(async () => "true".Equals((await CUrlGetJsonParsed<string>($"uiObject/{oid}/clickAndWaitForNewWindow", "value")).ToLowerInvariant()));
+        public Task<JObject> UIO_Dump(long oid) => Task.Run(async () => await CUrlGetJObject($"uiObject/{oid}/dump"));
+        public Task<bool> UIO_Exists(long oid) => Task.Run(async () => "true".Equals((await CUrlGetJsonParsed<string>($"uiObject/{oid}/exists", "value")).ToLowerInvariant()));
+        public Task<string> UIO_GetContentDescription(long oid) => Task.Run(async () => await CUrlGetJsonParsed<string>($"uiObject/{oid}/getContentDescription", "value"));
+        public Task<string> UIO_GetClassName(long oid) => Task.Run(async () => await CUrlGetJsonParsed<string>($"uiObject/{oid}/getClassName", "value"));
+        public Task<long> UIO_GetChildCount(long oid) => Task.Run(async () => await CUrlGetJsonParsed<long>($"uiObject/{oid}/getChildCount", "value"));
+        public Task<(long bottom, long left, long right, long top)> UIO_GetBounds(long oid) => Task.Run(async () => { var jo = await CUrlGetJObject($"uiObject/{oid}/getBounds"); return (jo["bottom"].ToObject<long>(), jo["left"].ToObject<long>(), jo["right"].ToObject<long>(), jo["top"].ToObject<long>()); });
+        public Task<UIObject> UIO_GetChild(long oid, FindObjectQueryStruct foqs) => Task.Run(async () => new UIObject(await CUrlGetJObject($"uiObject/{oid}/getChild", ("uiSelector", foqs.ToString())), this));
+        
+        public Task<bool> UIO2_Clear(long oid) => Task.Run(async () => "OK".Equals(await CUrlGetJsonParsed<string>($"uiObject2/{oid}/clear", "status")));
+        public Task<bool> UIO2_Click(long oid) => Task.Run(async () => "OK".Equals(await CUrlGetJsonParsed<string>($"uiObject2/{oid}/click", "status")));
+        public Task<bool> UIO2_ClickAndWait(long oid, int eventConditionRef, int? timeout = null) => Task.Run(async () => "OK".Equals(await CUrlGetJsonParsed<string>($"uiObject2/{oid}/clickAndWait", "status", (nameof(eventConditionRef), eventConditionRef.ToString()), (nameof(timeout), timeout.ToString())))); //Cli.GetStringAsync($"{Url}/uiObject2/{oid}/clickAndWait?eventConditionRef={eventConditionRef}{(timeout == null ? "" : $"&timeout={timeout}")}");
+        public Task<JObject> UIO2_Dump(long oid) => Task.Run(async () => await CUrlGetJObject($"uiObject2/{oid}/dump"));
+        public Task<long> UIO2_GetChildCount(long oid) => Task.Run(async () => await CUrlGetJsonParsed<long>($"uiObject2/{oid}/getChildCount", "value"));
+        public Task<bool> UIO2_LongClick(long oid) => Task.Run(async () => "OK".Equals(await CUrlGetJsonParsed<string>($"uiObject2/{oid}/longClick", "status")));
+        public Task<bool> UIO2_SetText(long oid, string text) => Task.Run(async () => "OK".Equals(await CUrlGetJsonParsed<string>($"uiObject2/{oid}/setText", "status", (nameof(text), text))));
 
-        public Task<string> UD_FreezeRotation() => Cli.GetStringAsync($"{Url}/v2/uiDevice/freezeRotation");
-        public Task<bool> UD_IsNaturalOrientation() => Task.Run(async () => JObject.Parse(await Cli.GetStringAsync($"{Url}/v2/uiDevice/isNaturalOrientation"))["value"].ToString() == "true");
-        public Task<bool> UD_IsScreenOn() => Task.Run(async () => JObject.Parse(await Cli.GetStringAsync($"{Url}/v2/uiDevice/isScreenOn"))["value"].ToString() == "true");
-        public Task<string> UD_LastTraversedText() => Cli.GetStringAsync($"{Url}/v2/uiDevice/lastTraversedText");
-        public Task<string> UD_Pixel() => Cli.GetStringAsync($"{Url}/v2/uiDevice/pixel");
-        public Task<bool> UD_PressBack() => Task.Run(async () => "OK".Equals(JObject.Parse(await Cli.GetStringAsync($"{Url}/v2/uiDevice/pressBack"))["status"].ToString()));
-        public Task<bool> UD_PressDPadCenter() => Task.Run(async () => "OK".Equals(JObject.Parse(await Cli.GetStringAsync($"{Url}/v2/uiDevice/pressDPadCenter"))["status"].ToString()));
-        public Task<bool> UD_PressDPadDown() => Task.Run(async () => "OK".Equals(JObject.Parse(await Cli.GetStringAsync($"{Url}/v2/uiDevice/pressDPadDown"))["status"].ToString()));
-        public Task<bool> UD_PressDPadLeft() => Task.Run(async () => "OK".Equals(JObject.Parse(await Cli.GetStringAsync($"{Url}/v2/uiDevice/pressDPadLeft"))["status"].ToString()));
-        public Task<bool> UD_PressDPadRight() => Task.Run(async () => "OK".Equals(JObject.Parse(await Cli.GetStringAsync($"{Url}/v2/uiDevice/pressDPadRight"))["status"].ToString()));
-        public Task<bool> UD_PressDPadUp() => Task.Run(async () => "OK".Equals(JObject.Parse(await Cli.GetStringAsync($"{Url}/v2/uiDevice/pressDPadUp"))["status"].ToString()));
-        public Task<bool> UD_PressDelete() => Task.Run(async () => "OK".Equals(JObject.Parse(await Cli.GetStringAsync($"{Url}/v2/uiDevice/pressDelete"))["status"].ToString()));
-        public Task<bool> UD_PressEnter() => Task.Run(async () => "OK".Equals(JObject.Parse(await Cli.GetStringAsync($"{Url}/v2/uiDevice/pressEnter"))["status"].ToString()));
-        public Task<bool> UD_PressHome() => Task.Run(async () => "OK".Equals(JObject.Parse(await Cli.GetStringAsync($"{Url}/v2/uiDevice/pressHome"))["status"].ToString()));
-        public Task<string> UD_PressKeyCode(Key key, int? metaState = null) => Cli.GetStringAsync($"{Url}/v2/uiDevice/pressKeyCode?keyCode={(int)key}{(metaState == null ? "" : $"&metaState={metaState}")}");
-        public Task<bool> UD_PressRecentApps() => Task.Run(async () => "OK".Equals(JObject.Parse(await Cli.GetStringAsync($"{Url}/v2/uiDevice/pressRecentApps"))["status"].ToString()));
-        public Task<string> UD_ProductName() => Task.Run(async () => JObject.Parse(await Cli.GetStringAsync($"{Url}/v2/uiDevice/productName"))["productName"].ToString());
-        public Task<byte[]> UD_Screenshot(int scale = 1, int quality = 100) => Cli.GetByteArrayAsync($"{Url}/v2/uiDevice/screenshot?scale={scale}&quality={quality}");
-        public Task<string> UD_Swipe(long startX, long startY, long endX, long endY, long steps = 1) => Cli.GetStringAsync($"{Url}/v2/uiDevice/swipe?startX={startX}&startY={startY}&endX={endX}&endY={endY}&steps={steps}");
-        public Task<string> UD_UnfreezeRotation() => Cli.GetStringAsync($"{Url}/v2/uiDevice/unfreezeRotation");
-        public Task<string> UD_Wait(long oid, int? timeout = null) => Cli.GetStringAsync($"{Url}/v2/uiDevice/wait?oid={oid}{(timeout == null ? "" : $"&timeout={timeout}")}");
-        public Task<string> UD_WaitForIdle(int timeout) => Cli.GetStringAsync($"{Url}/v2/uiDevice/waitForIdle?timeout={timeout}");
-        public Task<string> UD_WaitForWindowUpdate(string packageName, int? timeout = null) => Cli.GetStringAsync($"{Url}/v2/uiDevice/waitForWindowUpdate?packageName={packageName}{(timeout == null ? "" : $"&timeout={timeout}")}");
+        #endregion
 
-        public Task<string> UIO_ClearTextField(long oid) => Cli.GetStringAsync($"{Url}/v2/uiObject/{oid}/clearTextField");
-        public Task<string> UIO_Click(long oid) => Cli.GetStringAsync($"{Url}/v2/uiObject/{oid}/click");
-        public Task<string> UIO_ClickAndWaitForNewWindow(long oid) => Cli.GetStringAsync($"{Url}/v2/uiObject/{oid}/clickAndWaitForNewWindow");
-        public Task<string> UIO_Dump(long oid) => Cli.GetStringAsync($"{Url}/v2/uiObject/{oid}/dump");
-        public Task<string> UIO_Exists(long oid) => Cli.GetStringAsync($"{Url}/v2/uiObject/{oid}/exists");
-        public Task<string> UIO_GetBounds(long oid) => Cli.GetStringAsync($"{Url}/v2/uiObject/{oid}/getBounds");
-        public Task<string> UIO_GetChild(long oid, string uiSelector) => Cli.GetStringAsync($"{Url}/v2/uiObject/{oid}/getChild?uiSelector={uiSelector}");
-        public Task<string> UIO_GetChildCount(long oid) => Cli.GetStringAsync($"{Url}/v2/uiObject/{oid}/getChildCount");
 
-        public Task<string> UIO2_Clear(long oid) => Cli.GetStringAsync($"{Url}/uiObject2/{oid}/clear");
-        public Task<string> UIO2_Click(long oid) => Cli.GetStringAsync($"{Url}/uiObject2/{oid}/click");
-        public Task<string> UIO2_ClickAndWait(long oid, int eventConditionRef, int? timeout = null) => Cli.GetStringAsync($"{Url}/uiObject2/{oid}/clickAndWait?eventConditionRef={eventConditionRef}{(timeout == null ? "" : $"&timeout={timeout}")}");
-        public Task<string> UIO2_Dump(long oid) => Cli.GetStringAsync($"{Url}/uiObject2/{oid}/dump");
-        public Task<string> UIO2_GetChildCount(long oid) => Cli.GetStringAsync($"{Url}/uiObject2/{oid}/getChildCount");
 
-        public Task<string> UIO2_SetText(long oid, string text) => Cli.GetStringAsync($"{Url}/uiObject2/{oid}/setText?text={text}");
-        public Task<string> UIO2_LongClick(long oid) => Cli.GetStringAsync($"{Url}/uiObject2/{oid}/longClick");
+        //public Task<string> AM_ForceStop(string pkg) => Cli.GetStringAsync($"{Url}/v2/am/forceStop?pkg={pkg}");
+        //public Task<string> UD_LastTraversedText() => Cli.GetStringAsync($"{Url}/v2/uiDevice/lastTraversedText");
+        //public Task<string> UD_Pixel(int x, int y) => Cli.GetStringAsync($"{Url}/v2/uiDevice/pixel?x={x}&y={y}");
+        //public Task<string> UD_Wait(long oid, int? timeout = null) => Cli.GetStringAsync($"{Url}/v2/uiDevice/wait?oid={oid}{(timeout == null ? "" : $"&timeout={timeout}")}");
+        //public Task<string> UD_WaitForIdle(int timeout) => Cli.GetStringAsync($"{Url}/v2/uiDevice/waitForIdle?timeout={timeout}");
+        //public Task<string> UD_WaitForWindowUpdate(string packageName, int? timeout = null) => Cli.GetStringAsync($"{Url}/v2/uiDevice/waitForWindowUpdate?packageName={packageName}{(timeout == null ? "" : $"&timeout={timeout}")}");
 
+        //until
 
 
     }
