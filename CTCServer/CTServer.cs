@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Management;
 using System.Threading.Tasks;
@@ -17,7 +18,7 @@ namespace CulebraTesterAPI
             Port = localport;
             Process.StartInfo.FileName = @"C:\Program Files\Git\bin\bash.exe";
             Process.StartInfo.Arguments = $"-c './c2 start-server --local-port {localport}'";
-            Process.StartInfo.WorkingDirectory = @"G:\Source\adblibtest\bin\Debug\net8.0\lib";
+            Process.StartInfo.WorkingDirectory = Path.Combine(AppDomain.CurrentDomain.BaseDirectory,"lib");
             Process.StartInfo.UseShellExecute = false;
             Process.StartInfo.CreateNoWindow = true;
             Process.StartInfo.RedirectStandardInput = true;

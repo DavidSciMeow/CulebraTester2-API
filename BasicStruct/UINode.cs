@@ -129,7 +129,6 @@ namespace CulebraTesterAPI.BasicStruct
                 Bounds = (-1, -1, -1, -1);
             }
         }
-
         /// <summary>
         /// <inheritdoc/>
         /// </summary>

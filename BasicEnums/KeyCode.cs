@@ -1,4 +1,4 @@
-﻿namespace CulebraTesterAPI
+﻿namespace CulebraTesterAPI.BasicEnums
 {
     /// <summary>
     /// 按键定义
