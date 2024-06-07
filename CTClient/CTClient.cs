@@ -3,12 +3,10 @@ using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.IO;
 using System.Net.Http;
 using System.Threading.Tasks;
 using System.Web;
 using CulebraTesterAPI.BasicStruct;
-using System.Linq;
 
 namespace CulebraTesterAPI
 {
@@ -65,16 +63,21 @@ namespace CulebraTesterAPI
             {
                 try
                 {
-                    return await Cli.GetStringAsync(builder.ToString());
+                    var response = await Cli.GetAsync(builder.ToString());
+                    Debug.WriteLine($"CUrlGetJson __ Request : {response.StatusCode}");
+                    if (response.StatusCode == System.Net.HttpStatusCode.OK
+                        || response.StatusCode == System.Net.HttpStatusCode.NotFound)
+                        return await response.Content.ReadAsStringAsync();
+                    else break;
                 }
                 catch (Exception ex)
                 {
                     Debug.WriteLine($"CUrlGetJson __ Request failed: {ex.Message}");
-                    if (i == maxRetries - 1) throw; // rethrow the last exception
+                    if (i == maxRetries - 1) throw;
                 }
-                await Task.Delay(1000); // wait for a second before retrying
+                await Task.Delay(1000); 
             }
-            return null; // return null if all retries failed
+            return null;
         }
         private async Task<byte[]> CUrlBytes(string endpoint, params (string key, string value)[] queryParams)
         {
@@ -107,53 +110,6 @@ namespace CulebraTesterAPI
         private async Task<JObject> CUrlGetJObject(string endpoint, params (string key, string value)[] queryParams) => JObject.Parse(await CUrl(endpoint, queryParams));
         private async Task<JArray> CUrlGetJArray(string endpoint, params (string key, string value)[] queryParams) => JArray.Parse(await CUrl(endpoint, queryParams));
         private async Task<T> CUrlGetJsonParsed<T>(string endpoint, string Key, params (string key, string value)[] queryParams) => (await CUrlGetJObject(endpoint, queryParams)).TryGetValue(Key, out JToken value) ? value.ToObject<T>() : default;
-
-
-        public Task<HashSet<UINode>> GetUI(bool debugLogConsole = false, bool debugLogStruct = false) => Task.Run(
-            async () =>
-            {
-                var ret = new HashSet<UINode>();
-                var s = JObject.Load(new JsonTextReader(new StringReader(await UD_DumpWindowHierarchy())) { MaxDepth = 1024 });
-                Stack<Tuple<JToken, int>> stack = new Stack<Tuple<JToken, int>>();
-                stack.Push(new Tuple<JToken, int>(s, 0));
-                while (stack.Count > 0)
-                {
-                    var tuple = stack.Pop();
-                    var token = tuple.Item1;
-                    var depth = tuple.Item2;
-                    var uinode = new UINode(token as JObject, depth);
-
-                    ret.Add(uinode);
-
-                    if (debugLogStruct)
-                    {
-                        Debug.WriteLine($"{new string('│', depth)}{uinode}");
-                    }
-                    if (debugLogConsole)
-                    {
-                        Console.WriteLine($"{new string('│', depth)}{uinode}");
-                    }
-
-                    var children = (JArray)token["children"];
-                    for (int i = 0; i < children.Count; i++)
-                    {
-                        stack.Push(new Tuple<JToken, int>(children[i], depth + 1));
-                    }
-                }
-                return ret;
-            });
-        public Task<UIObject2> GetUIObject2By(FindObjectQueryStruct foqs) => Task.Run(
-            async () =>
-            {
-                var i = await UD_FindObjects(foqs);
-                if (i.Count > 0)
-                {
-                    return i.FirstOrDefault();
-                }
-                else
-                {
-                    return default;
-                }
-            });
+        
     }
 }
