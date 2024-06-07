@@ -59,7 +59,7 @@ namespace CulebraTesterAPI
             {
                 try
                 {
-                    var i = await UD_FindObjects(foqs);
+                    var i = await FindObjects(foqs);
                     if (i.Count > 0)
                     {
                         return i.FirstOrDefault();
@@ -75,7 +75,7 @@ namespace CulebraTesterAPI
             {
                 try
                 {
-                    var i = await UD_FindObjects(foqs);
+                    var i = await FindObjects(foqs);
                     if (i.Count > 0)
                     {
                         return i;
@@ -90,7 +90,7 @@ namespace CulebraTesterAPI
         {
             return Task.Run(async () =>
             {
-                var _fo = await UD_FindObject(foqs);
+                var _fo = await FindObject(foqs);
                 if (_fo.Oid != -1)
                 {
                     var _bound = await UIO_GetBounds(_fo.Oid);

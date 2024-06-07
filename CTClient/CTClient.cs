@@ -22,7 +22,7 @@ namespace CulebraTesterAPI
             ShutServerWhenQuit = _shutServerWhenQuit;
         }
 
-        public (string Country, string Language, string Varient) LangSet { get => D_Locale().GetAwaiter().GetResult(); } 
+        public (string Country, string Language, string Varient) LangSet { get => D_Locale().GetAwaiter().GetResult(); }
         public int IdleTimeout { get => Conf_GetWaitForIdleTimeout().GetAwaiter().GetResult(); set => Conf_SetWaitForIdleTimeout(value).GetAwaiter().GetResult(); }
         public long VersionCode { get => Info().GetAwaiter().GetResult().versionCode; }
         public string VersionName { get => Info().GetAwaiter().GetResult().versionName; }
@@ -65,17 +65,26 @@ namespace CulebraTesterAPI
                 {
                     var response = await Cli.GetAsync(builder.ToString());
                     Debug.WriteLine($"CUrlGetJson __ Request : {response.StatusCode}");
-                    if (response.StatusCode == System.Net.HttpStatusCode.OK
-                        || response.StatusCode == System.Net.HttpStatusCode.NotFound)
-                        return await response.Content.ReadAsStringAsync();
-                    else break;
+                    if (response.StatusCode == System.Net.HttpStatusCode.OK)
+                    {
+                        var ret = await response.Content.ReadAsStringAsync();
+                        return ret;
+                    }
+                    else if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+                    {
+                        return "{}";
+                    }
+                    else
+                    {
+                        break;
+                    }
                 }
                 catch (Exception ex)
                 {
                     Debug.WriteLine($"CUrlGetJson __ Request failed: {ex.Message}");
                     if (i == maxRetries - 1) throw;
                 }
-                await Task.Delay(1000); 
+                await Task.Delay(1000);
             }
             return null;
         }
@@ -107,9 +116,9 @@ namespace CulebraTesterAPI
             }
             return null; // return null if all retries failed
         }
-        private async Task<JObject> CUrlGetJObject(string endpoint, params (string key, string value)[] queryParams) => JObject.Parse(await CUrl(endpoint, queryParams));
-        private async Task<JArray> CUrlGetJArray(string endpoint, params (string key, string value)[] queryParams) => JArray.Parse(await CUrl(endpoint, queryParams));
+        private async Task<JObject> CUrlGetJObject(string endpoint, params (string key, string value)[] queryParams) => JObject.Parse(await CUrl(endpoint, queryParams)??"{}");
+        private async Task<JArray> CUrlGetJArray(string endpoint, params (string key, string value)[] queryParams) => JArray.Parse(await CUrl(endpoint, queryParams) ?? "[]");
         private async Task<T> CUrlGetJsonParsed<T>(string endpoint, string Key, params (string key, string value)[] queryParams) => (await CUrlGetJObject(endpoint, queryParams)).TryGetValue(Key, out JToken value) ? value.ToObject<T>() : default;
-        
+
     }
 }
