@@ -4,9 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Net.Http;
 using System.Threading.Tasks;
-using System.Web;
 using CulebraTesterAPI.BasicStruct;
 using System.Linq;
 
@@ -14,7 +12,18 @@ namespace CulebraTesterAPI
 {
     public partial class CTClient : IDisposable
     {
+        /// <summary>
+        /// 获取整体UI
+        /// </summary>
+        /// <param name="debugLogConsole">把Debug记录到控制台</param>
+        /// <param name="debugLogStruct">把Debug记录到Debug区</param>
+        /// <returns></returns>
         public HashSet<UINode> GetUI(bool debugLogConsole = false, bool debugLogStruct = false) => GetUIAsync(debugLogConsole, debugLogStruct).GetAwaiter().GetResult();
+        /// <summary>
+        /// 获取一个UIObject(根据UI搜索模式)
+        /// </summary>
+        /// <param name="foqs">一种匹配的UI搜索模式</param>
+        /// <returns>匹配的UIObject</returns>
         public UIObject GetUIObject2By(FindObjectQueryStruct foqs) => GetUIObject2ByAsync(foqs).GetAwaiter().GetResult();
         public List<UIObject> GetAllUIObject2By(FindObjectQueryStruct foqs) => GetAllUIObject2ByAsync(foqs).GetAwaiter().GetResult();
         public (long bottom, long left, long right, long top) GetUIObject2FindBound(FindObjectQueryStruct foqs) => GetUIObject2FindBoundAsync(foqs).GetAwaiter().GetResult();

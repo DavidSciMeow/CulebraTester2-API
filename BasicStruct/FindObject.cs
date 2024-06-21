@@ -32,6 +32,7 @@ namespace CulebraTesterAPI.BasicStruct
         [JsonProperty("instance")]
         public int? Instance { get; set; }
 
+
         public override int GetHashCode()
         {
             unchecked
@@ -88,15 +89,7 @@ namespace CulebraTesterAPI.BasicStruct
 
             return true;
         }
-        public override bool Equals(object obj)
-        {
-            if (obj is FindObjectQueryStruct)
-            {
-                return Equals((FindObjectQueryStruct)obj);
-            }
-
-            return false;
-        }
+        public override bool Equals(object obj) => obj is FindObjectQueryStruct _o && Equals(_o);
         public static bool operator ==(FindObjectQueryStruct left, FindObjectQueryStruct right) => left.Equals(right);
         public static bool operator !=(FindObjectQueryStruct left, FindObjectQueryStruct right) => !left.Equals(right);
         
