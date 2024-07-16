@@ -33,11 +33,19 @@ namespace CulebraTesterAPI
 
         public Task<string> TC_StartActivity(string pkg, string cls, string uri = null) => CUrlGetJsonParsed<string>("targetContext/startActivity", "status", (nameof(pkg), pkg), (nameof(cls), cls), (nameof(uri), uri));
         public Task<byte[]> UD_Screenshot(int scale = 1, int quality = 100) => Task.Run(async () => await CUrlBytes("uiDevice/screenshot", (nameof(scale), scale.ToString()), (nameof(quality), quality.ToString())));
-
+        /// <summary>
+        /// 屏幕截图
+        /// </summary>
+        /// <returns></returns>
+        public Task<bool> OSC_ScreenShot() => UD_PressKeyCode(Key.KEYCODE_SYSRQ);
+        /// <summary>
+        /// 获取当前包名称
+        /// </summary>
+        /// <returns></returns>
         public Task<string> UD_CurrentPackageName() => Task.Run(async () => await CUrlGetJsonParsed<string>("uiDevice/currentPackageName", "currentPackageName"));
 
         public Task<bool> OS_Clear() => Task.Run(async () => "OK".Equals(await CUrlGetJsonParsed<string>("objectStore/clear", "status")));
-        public Task<List<UIObject>> OS_List() => Task.Run(async () => (await CUrlGetJArray("objectStore/list")).Select(i => new UIObject(i, this)).ToList());
+        public Task<List<UIObject2>> OS_List() => Task.Run(async () => (await CUrlGetJArray("objectStore/list")).Select(i => new UIObject2(i, this)).ToList());
         public Task<bool> OS_Remove(long oid) => Task.Run(async () => "OK".Equals(await CUrlGetJsonParsed<string>("objectStore/remove", "status", (nameof(oid), oid.ToString()))));
         public Task<bool> UD_PressBack() => Task.Run(async () => "OK".Equals(await CUrlGetJsonParsed<string>("uiDevice/pressBack", "status")));
         public Task<bool> UD_PressDPadCenter() => Task.Run(async () => "OK".Equals(await CUrlGetJsonParsed<string>("uiDevice/pressDPadCenter", "status")));
@@ -59,7 +67,7 @@ namespace CulebraTesterAPI
         public Task<bool> Quit() => Task.Run(async () => "OK".Equals(await CUrlGetJsonParsed<string>("culebra/quit", "status")));
         public Task<(string devname, int x, int y)> D_DisplayRealSize() => Task.Run(async () => { var obj = await CUrlGetJObject("device/displayRealSize"); return (obj["device"].ToString(), obj["x"].ToObject<int>(), obj["y"].ToObject<int>()); });
 
-        public Task<List<UIObject>> FindObjects(FindObjectQueryStruct foqs) => Task.Run(async () => (await CUrlGetJArray("uiDevice/findObjects", ("bySelector", foqs.ToString()))).Select(i => new UIObject(i, this)).ToList());
+        public Task<List<UIObject2>> FindObjects(FindObjectQueryStruct foqs) => Task.Run(async () => (await CUrlGetJArray("uiDevice/findObjects", ("bySelector", foqs.ToString()))).Select(i => new UIObject2(i, this)).ToList());
         public Task<LegacyUIObject> FindObject(FindObjectQueryStruct foqs) => Task.Run(async () => new LegacyUIObject(await CUrlGetJObject("uiDevice/findObject", ("uiSelector", foqs.ToString())), this));
         public Task<bool> HasObject(FindObjectQueryStruct foqs) => Task.Run(async () => "true".Equals((await CUrlGetJsonParsed<string>("uiDevice/hasObject", "value", ("bySelector", foqs.ToString()))).ToLowerInvariant()));
 
@@ -88,7 +96,7 @@ namespace CulebraTesterAPI
         public Task<long> UIO2_GetChildCount(long oid) => Task.Run(async () => await CUrlGetJsonParsed<long>($"uiObject2/{oid}/getChildCount", "value"));
         
         public Task<LegacyUIObject> UIO_GetChild(long oid, FindObjectQueryStruct foqs) => Task.Run(async () => new LegacyUIObject(await CUrlGetJObject($"uiObject/{oid}/getChild", ("uiSelector", foqs.ToString())), this));
-        public Task<List<UIObject>> UIO2_GetChildren(long oid) => Task.Run(async () => (await CUrlGetJArray($"uiObject2/{oid}/getChildren")).Select(i => new UIObject(i, this)).ToList());
+        public Task<List<UIObject2>> UIO2_GetChildren(long oid) => Task.Run(async () => (await CUrlGetJArray($"uiObject2/{oid}/getChildren")).Select(i => new UIObject2(i, this)).ToList());
         
         public Task<bool> UIO2_LongClick(long oid) => Task.Run(async () => "OK".Equals(await CUrlGetJsonParsed<string>($"uiObject2/{oid}/longClick", "status")));
         public Task<bool> UIO2_SetText(long oid, string text) => Task.Run(async () => "OK".Equals(await CUrlGetJsonParsed<string>($"uiObject2/{oid}/setText", "status", (nameof(text), text))));

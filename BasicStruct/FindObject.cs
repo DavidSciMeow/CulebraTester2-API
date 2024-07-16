@@ -4,6 +4,9 @@ using System.Text;
 
 namespace CulebraTesterAPI.BasicStruct
 {
+    /// <summary>
+    /// 获取UI的查询结构
+    /// </summary>
     public struct FindObjectQueryStruct : IEquatable<FindObjectQueryStruct>
     {
         //[JsonProperty("hasChild")]
@@ -11,28 +14,58 @@ namespace CulebraTesterAPI.BasicStruct
         //[JsonProperty("hasDescendant")]
         //public FindObjectQueryStruct HasDescendant { get; set; }
 
+        /// <summary>
+        /// UI的类
+        /// </summary>
         [JsonProperty("clazz")]
         public string Class { get; set; }
+        /// <summary>
+        /// UI是否可点击
+        /// </summary>
         [JsonProperty("clickable")]
         public bool? Clickable { get; set; }
+        /// <summary>
+        /// UI的深度层
+        /// </summary>
         [JsonProperty("depth")]
         public int? Depth { get; set; }
+        /// <summary>
+        /// UI的描述
+        /// </summary>
         [JsonProperty("desc")]
         public string Desc { get; set; }
+        /// <summary>
+        /// UI的包
+        /// </summary>
         [JsonProperty("pkg")]
         public string Pkg { get; set; }
+        /// <summary>
+        /// UI的资源类
+        /// </summary>
         [JsonProperty("res")]
         public string Res { get; set; }
+        /// <summary>
+        /// UI是否可滚动
+        /// </summary>
         [JsonProperty("scrollable")]
         public bool? Scrollable { get; set; }
+        /// <summary>
+        /// UI的文字
+        /// </summary>
         [JsonProperty("text")]
         public string Text { get; set; }
+        /// <summary>
+        /// UI的索引
+        /// </summary>
         [JsonProperty("index")]
         public int? Index { get; set; }
+        /// <summary>
+        /// UI的实例
+        /// </summary>
         [JsonProperty("instance")]
         public int? Instance { get; set; }
 
-
+        /// <inheritdoc/>
         public override int GetHashCode()
         {
             unchecked
@@ -64,6 +97,7 @@ namespace CulebraTesterAPI.BasicStruct
             }
 
         }
+        /// <inheritdoc/>
         public bool Equals(FindObjectQueryStruct other)
         {
             if (Class != null && !Class.Equals(other.Class))
@@ -89,10 +123,13 @@ namespace CulebraTesterAPI.BasicStruct
 
             return true;
         }
+        /// <inheritdoc/>
         public override bool Equals(object obj) => obj is FindObjectQueryStruct _o && Equals(_o);
+        /// <inheritdoc/>
         public static bool operator ==(FindObjectQueryStruct left, FindObjectQueryStruct right) => left.Equals(right);
+        /// <inheritdoc/>
         public static bool operator !=(FindObjectQueryStruct left, FindObjectQueryStruct right) => !left.Equals(right);
-        
+        /// <inheritdoc/>
         public override string ToString()
         {
             StringBuilder sb = new StringBuilder();

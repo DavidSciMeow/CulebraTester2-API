@@ -24,8 +24,8 @@ namespace CulebraTesterAPI
         /// </summary>
         /// <param name="foqs">一种匹配的UI搜索模式</param>
         /// <returns>匹配的UIObject</returns>
-        public UIObject GetUIObject2By(FindObjectQueryStruct foqs) => GetUIObject2ByAsync(foqs).GetAwaiter().GetResult();
-        public List<UIObject> GetAllUIObject2By(FindObjectQueryStruct foqs) => GetAllUIObject2ByAsync(foqs).GetAwaiter().GetResult();
+        public UIObject2 GetUIObject2By(FindObjectQueryStruct foqs) => GetUIObject2ByAsync(foqs).GetAwaiter().GetResult();
+        public List<UIObject2> GetAllUIObject2By(FindObjectQueryStruct foqs) => GetAllUIObject2ByAsync(foqs).GetAwaiter().GetResult();
         public (long bottom, long left, long right, long top) GetUIObject2FindBound(FindObjectQueryStruct foqs) => GetUIObject2FindBoundAsync(foqs).GetAwaiter().GetResult();
 
 
@@ -63,7 +63,7 @@ namespace CulebraTesterAPI
                 }
                 return ret;
             });
-        public Task<UIObject> GetUIObject2ByAsync(FindObjectQueryStruct foqs) => Task.Run(
+        public Task<UIObject2> GetUIObject2ByAsync(FindObjectQueryStruct foqs) => Task.Run(
             async () =>
             {
                 try
@@ -79,7 +79,7 @@ namespace CulebraTesterAPI
                 }
                 return default;
             });
-        public Task<List<UIObject>> GetAllUIObject2ByAsync(FindObjectQueryStruct foqs) => Task.Run(
+        public Task<List<UIObject2>> GetAllUIObject2ByAsync(FindObjectQueryStruct foqs) => Task.Run(
             async () =>
             {
                 try
@@ -93,7 +93,7 @@ namespace CulebraTesterAPI
                 catch
                 {
                 }
-                return new List<UIObject>();
+                return new List<UIObject2>();
             });
         public Task<(long bottom, long left, long right, long top)> GetUIObject2FindBoundAsync(FindObjectQueryStruct foqs)
         {
